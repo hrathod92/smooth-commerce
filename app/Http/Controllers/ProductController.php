@@ -11,9 +11,45 @@ use Illuminate\Support\Facades\Validator;
 class ProductController extends Controller
 {
 
+    /**
+     * List Products
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function listProducts(Request $request)
     {
-        $products = Product::all();
+        $input = $request->all();
+
+        $rules = [
+            'per_page' => 'numeric',
+            'page'     => 'numeric'
+        ];
+
+        $validator = Validator::make($input, $rules);
+
+        if ($validator->fails()) {
+
+            $messages = $validator->messages();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation errors occurred',
+                'errors'  => $messages
+            ]);
+        }
+
+        $perPage = $request->get('per_page', 50);
+        $page    = $request->get('page', 0);
+        $offset  = 0;
+        $take    = $perPage ? $perPage : 50;
+        $page    = (int) $page;
+
+        if ($page && $page > 1) {
+            $offset = ($take * $page) - $take;
+        }
+
+        $products = Product::offset($offset)->limit($take)->get();
 
         if (count($products)) {
             return response()->json([
@@ -28,9 +64,45 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * List Categories
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function listCategories(Request $request)
     {
-        $categories = Category::all();
+        $input = $request->all();
+
+        $rules = [
+            'per_page' => 'numeric',
+            'page'     => 'numeric'
+        ];
+
+        $validator = Validator::make($input, $rules);
+
+        if ($validator->fails()) {
+
+            $messages = $validator->messages();
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation errors occurred',
+                'errors'  => $messages
+            ]);
+        }
+
+        $perPage = $request->get('per_page', 50);
+        $page    = $request->get('page', 0);
+        $offset  = 0;
+        $take    = $perPage ? $perPage : 50;
+        $page    = (int) $page;
+
+        if ($page && $page > 1) {
+            $offset = ($take * $page) - $take;
+        }
+
+        $categories = Category::offset($offset)->limit($take)->get();
 
         if (count($categories)) {
             return response()->json([
@@ -45,6 +117,12 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Get Single Product
+     *
+     * @param $id
+     * @return JsonResponse
+     */
     public function singleProduct($id)
     {
         $product = Product::find($id);
@@ -62,6 +140,12 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Store Product
+     *
+     * @param Request $request
+     * @return JsonResponse
+     */
     public function storeProduct(Request $request)
     {
         $input = $request->all();
@@ -107,6 +191,14 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Update Product
+     *
+     * @param Request $request
+     * @param $id
+     *
+     * @return JsonResponse
+     */
     public function updateProduct(Request $request, $id)
     {
         $input   = $request->all();
@@ -160,6 +252,12 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Delete Product
+     *
+     * @param $id
+     * @return JsonResponse
+     */
     public function deleteProduct($id)
     {
         $product = Product::find($id);
@@ -184,6 +282,12 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Convert To Product Output
+     *
+     * @param mixed $collection
+     * @return JsonResponse
+     */
     public function converToProductOutput($collection = [])
     {
         if ($collection instanceof Collection) {
@@ -211,6 +315,12 @@ class ProductController extends Controller
         }
     }
 
+    /**
+     * Convert To Category Output
+     *
+     * @param mixed $collection
+     * @return JsonResponse
+     */
     public function converToCategoryOutput($collection = [])
     {
         if ($collection instanceof Collection) {
