@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Library\API;
+namespace App\Library\API;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -9,7 +9,6 @@ use Illuminate\Support\Facades\Validator;
 
 class BaseAPILibrary extends Controller
 {
-
     /**
      * Default Pagination
      *
