@@ -2,193 +2,83 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Library\API\BaseAPILibrary;
 use Illuminate\Http\Request;
 use App\Models\Product;
-use App\Models\Category;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Response as HttpResponse;
 
-class ProductController extends Controller
+class ProductController extends BaseAPILibrary
 {
+    /**
+     * Product Model
+     *
+     * @var Product
+     */
+    public $model;
+
+    /**
+     * Construct
+     *
+     */
+    public function __construct()
+    {
+        $this->model = new Product();
+    }
 
     /**
      * List Products
      *
      * @param Request $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function listProducts(Request $request)
     {
-        $input = $request->all();
-
-        $rules = [
-            'per_page' => 'numeric',
-            'page'     => 'numeric'
-        ];
-
-        $validator = Validator::make($input, $rules);
-
-        if ($validator->fails()) {
-
-            $messages = $validator->messages();
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'Validation errors occurred',
-                'errors'  => $messages
-            ], 400);
-        }
-
-        $perPage = $request->get('per_page', 50);
-        $page    = $request->get('page', 0);
-        $offset  = 0;
-        $take    = $perPage ? $perPage : 50;
-        $page    = (int) $page;
-
-        if ($page && $page > 1) {
-            $offset = ($take * $page) - $take;
-        }
-
-        $products = Product::offset($offset)->limit($take)->get();
+        $products = $this->applyPagination($this->model, $request);
 
         if (count($products)) {
-            return response()->json([
-                'status' => true,
-                'items'   => $this->converToProductOutput($products)
-            ], 200);
+            return $this->setSuccessResponse($this->model->converToProductOutput($products));
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'Product list is empty.'
-        ], 404);
-    }
-
-    /**
-     * List Categories
-     *
-     * @param Request $request
-     * @return JsonResponse
-     */
-    public function listCategories(Request $request)
-    {
-        $input = $request->all();
-
-        $rules = [
-            'per_page' => 'numeric',
-            'page'     => 'numeric'
-        ];
-
-        $validator = Validator::make($input, $rules);
-
-        if ($validator->fails()) {
-
-            $messages = $validator->messages();
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'Validation errors occurred',
-                'errors'  => $messages
-            ], 400);
-        }
-
-        $perPage = $request->get('per_page', 50);
-        $page    = $request->get('page', 0);
-        $offset  = 0;
-        $take    = $perPage ? $perPage : 50;
-        $page    = (int) $page;
-
-        if ($page && $page > 1) {
-            $offset = ($take * $page) - $take;
-        }
-
-        $categories = Category::offset($offset)->limit($take)->get();
-
-        if (count($categories)) {
-            return response()->json([
-                'status' => true,
-                'items'   => $this->converToCategoryOutput($categories)
-            ], 200);
-        }
-
-        return response()->json([
-            'status'  => false,
-            'message' => 'Category list is empty.'
-        ], 404);
+        return $this->setFailureResponse('NOT_FOUND', 'Product list is empty.', true, HttpResponse::HTTP_NOT_FOUND);
     }
 
     /**
      * Get Single Product
      *
      * @param $id
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function singleProduct($id)
     {
-        $product = Product::find($id);
+        $product = $this->model->find($id);
 
         if (isset($product->id)) {
-            return response()->json([
-                'status' => true,
-                'item'   => $this->converToProductOutput($product)
-            ], 200);
+            return $this->setSuccessResponse($this->model->converToProductOutput($product), 'item');
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'Product not found.'
-        ], 404);
+        return $this->setFailureResponse('NOT_FOUND', 'Product not found.', true, HttpResponse::HTTP_NOT_FOUND);
     }
 
     /**
      * Store Product
      *
      * @param Request $request
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function storeProduct(Request $request)
     {
         $input = $request->all();
 
-        $rules = [
-            'name'        => 'required|unique:products',
-            'category_id' => 'required|exists:categories,id',
-            'sku'         => 'required|unique:products',
-            'price'       => 'required|numeric'
-        ];
+        $this->validateCustom($input, $this->createProductRules, $this->createProductMessages);
 
-        $messages = [
-            'name.required'        => 'Please enter a name.',
-            'category_id.required' => 'Please enter a category.',
-            'sku.required'         => 'Please enter a SKU.',
-            'price.required'       => 'Please enter a Price.'
-        ];
-
-        $validator = Validator::make($input, $rules, $messages);
-
-        if ($validator->fails()) {
-
-            $messages = $validator->messages();
-
-            return response()->json([
-                'status'  => false,
-                'message' => 'Validation errors occurred',
-                'errors'  => $messages
-            ], 400);
-        }
-
-        if (Product::create($input)) {
-
+        if ($this->model->create($input)) {
             return response()->json([
                 'status'  => true,
                 'message' => 'Product has been added successfully.'
-            ], 200);
+            ]);
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'Something went wrong while adding product.'
-        ], 500);
+        return $this->setFailureResponse('INTERNAL_SERVER_ERROR', 'Something went wrong while adding product.', true, HttpResponse::HTTP_INTERNAL_SERVER_ERROR);
     }
 
     /**
@@ -197,20 +87,17 @@ class ProductController extends Controller
      * @param Request $request
      * @param $id
      *
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function updateProduct(Request $request, $id)
     {
-        $input   = $request->all();
+        $input = $request->all();
 
         if (empty($input)) {
-            return response()->json([
-                'status'  => false,
-                'message' => 'Please add atleast one field to update.'
-            ], 400);
+            return $this->setFailureResponse('BAD_REQUEST', 'Please add atleast one field to update.', true, HttpResponse::HTTP_BAD_REQUEST);
         }
 
-        $product = Product::find($id);
+        $product = $this->model->find($id);
 
         if (isset($product->id)) {
             $rules = [
@@ -220,125 +107,42 @@ class ProductController extends Controller
                 'price'       => 'numeric'
             ];
 
-            $validator = Validator::make($input, $rules);
-
-            if ($validator->fails()) {
-
-                $messages = $validator->messages();
-
-                return response()->json([
-                    'status'  => false,
-                    'message' => 'Validation errors occurred',
-                    'errors'  => $messages
-                ], 400);
-            }
+            $this->validateCustom($input, $rules);
 
             if ($product->update($input)) {
                 return response()->json([
                     'status'  => true,
                     'message' => 'Product has been updated successfully.'
-                ], 200);
+                ]);
             }
 
-            return response()->json([
-                'status'  => false,
-                'message' => 'Something went wrong while updating product.'
-            ], 500);
+            return $this->setFailureResponse('INTERNAL_SERVER_ERROR', 'Something went wrong while updating product.', true, HttpResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'Product not found.'
-        ], 404);
+        return $this->setFailureResponse('NOT_FOUND', 'Product not found.', true, HttpResponse::HTTP_NOT_FOUND);
     }
 
     /**
      * Delete Product
      *
      * @param $id
-     * @return JsonResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function deleteProduct($id)
     {
-        $product = Product::find($id);
+        $product = $this->model->find($id);
 
         if (isset($product->id)) {
             if ($product->delete()) {
                 return response()->json([
                     'status'  => true,
                     'message' => 'Product deleted successfully.'
-                ], 200);
+                ]);
             }
 
-            return response()->json([
-                'status'  => false,
-                'message' => 'Unable to delete the product.'
-            ], 500);
+            return $this->setFailureResponse('INTERNAL_SERVER_ERROR', 'Unable to delete the product.', true, HttpResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
 
-        return response()->json([
-            'status'  => false,
-            'message' => 'Product not found.'
-        ], 404);
-    }
-
-    /**
-     * Convert To Product Output
-     *
-     * @param mixed $collection
-     * @return JsonResponse
-     */
-    public function converToProductOutput($collection = [])
-    {
-        if ($collection instanceof Collection) {
-            $collection = $collection->map(function ($product, $key) {
-                $product = [
-                    'id'       => $product->id,
-                    "name"     => $product->name,
-                    "category" => $product->category->name,
-                    "sku"      => $product->sku,
-                    "price"    => $product->price
-                ];
-
-                return $product;
-            });
-
-            return $collection;
-        } else {
-            return [
-                'id'       => $collection->id,
-                "name"     => $collection->name,
-                "category" => $collection->category->name,
-                "sku"      => $collection->sku,
-                "price"    => $collection->price
-            ];
-        }
-    }
-
-    /**
-     * Convert To Category Output
-     *
-     * @param mixed $collection
-     * @return JsonResponse
-     */
-    public function converToCategoryOutput($collection = [])
-    {
-        if ($collection instanceof Collection) {
-            $collection = $collection->map(function ($category, $key) {
-                $category = [
-                    'id'   => $category->id,
-                    "name" => $category->name
-                ];
-
-                return $category;
-            });
-
-            return $collection;
-        } else {
-            return [
-                'id'   => $collection->id,
-                "name" => $collection->name
-            ];
-        }
+        return $this->setFailureResponse('NOT_FOUND', 'Product not found.', true, HttpResponse::HTTP_NOT_FOUND);
     }
 }

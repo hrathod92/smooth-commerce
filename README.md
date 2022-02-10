@@ -78,12 +78,12 @@ The api can be accessed at [http://localhost:8000/api](http://localhost:8000/api
 
 **Developed APIs**
 
-    List Products  -  GET  - http://localhost:8000/api/products            -> URL Params  : per_page, page(for pagination)
-    Single Product -  GET  - http://localhost:8000/api/product/{id}
-    Create Product -  POST - http://localhost:8000/api/create-product      -> Body Params : name, category_id, sku, price
-    Update Product -  POST - http://localhost:8000/api/update-product/{id} -> Body Params : name, category_id, sku, price
-    Delete Product -  POST - http://localhost:8000/api/delete-product/{id}
-    List Categories - GET  - http://localhost:8000/api/categories          -> URL Params  : per_page, page(for pagination)
+    List Products  -  GET     - http://localhost:8000/api/products            -> URL Params  : per_page, page(for pagination)
+    Single Product -  GET     - http://localhost:8000/api/products/{id}
+    Create Product -  POST    - http://localhost:8000/api/products/create      -> Body Params : name, category_id, sku, price
+    Update Product -  PATCH   - http://localhost:8000/api/products/update/{id} -> Body Params : name, category_id, sku, price
+    Delete Product -  DELETE  - http://localhost:8000/api/products/delete/{id}
+    List Categories - GET     - http://localhost:8000/api/categories          -> URL Params  : per_page, page(for pagination)
 
 **API Test Cases**
 
