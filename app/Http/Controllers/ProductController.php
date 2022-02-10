@@ -36,7 +36,7 @@ class ProductController extends Controller
                 'status'  => false,
                 'message' => 'Validation errors occurred',
                 'errors'  => $messages
-            ]);
+            ], 400);
         }
 
         $perPage = $request->get('per_page', 50);
@@ -55,13 +55,13 @@ class ProductController extends Controller
             return response()->json([
                 'status' => true,
                 'items'   => $this->converToProductOutput($products)
-            ]);
+            ], 200);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Product list is empty.'
-        ]);
+        ], 404);
     }
 
     /**
@@ -89,7 +89,7 @@ class ProductController extends Controller
                 'status'  => false,
                 'message' => 'Validation errors occurred',
                 'errors'  => $messages
-            ]);
+            ], 400);
         }
 
         $perPage = $request->get('per_page', 50);
@@ -108,13 +108,13 @@ class ProductController extends Controller
             return response()->json([
                 'status' => true,
                 'items'   => $this->converToCategoryOutput($categories)
-            ]);
+            ], 200);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Category list is empty.'
-        ]);
+        ], 404);
     }
 
     /**
@@ -131,13 +131,13 @@ class ProductController extends Controller
             return response()->json([
                 'status' => true,
                 'item'   => $this->converToProductOutput($product)
-            ]);
+            ], 200);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Product not found.'
-        ]);
+        ], 404);
     }
 
     /**
@@ -174,7 +174,7 @@ class ProductController extends Controller
                 'status'  => false,
                 'message' => 'Validation errors occurred',
                 'errors'  => $messages
-            ]);
+            ], 400);
         }
 
         if (Product::create($input)) {
@@ -182,13 +182,13 @@ class ProductController extends Controller
             return response()->json([
                 'status'  => true,
                 'message' => 'Product has been added successfully.'
-            ]);
+            ], 200);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Something went wrong while adding product.'
-        ]);
+        ], 500);
     }
 
     /**
@@ -207,7 +207,7 @@ class ProductController extends Controller
             return response()->json([
                 'status'  => false,
                 'message' => 'Please add atleast one field to update.'
-            ]);
+            ], 400);
         }
 
         $product = Product::find($id);
@@ -230,26 +230,26 @@ class ProductController extends Controller
                     'status'  => false,
                     'message' => 'Validation errors occurred',
                     'errors'  => $messages
-                ]);
+                ], 400);
             }
 
             if ($product->update($input)) {
                 return response()->json([
                     'status'  => true,
                     'message' => 'Product has been updated successfully.'
-                ]);
+                ], 200);
             }
 
             return response()->json([
                 'status'  => false,
                 'message' => 'Something went wrong while updating product.'
-            ]);
+            ], 500);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Product not found.'
-        ]);
+        ], 404);
     }
 
     /**
@@ -267,19 +267,19 @@ class ProductController extends Controller
                 return response()->json([
                     'status'  => true,
                     'message' => 'Product deleted successfully.'
-                ]);
+                ], 200);
             }
 
             return response()->json([
                 'status'  => false,
                 'message' => 'Unable to delete the product.'
-            ]);
+            ], 500);
         }
 
         return response()->json([
             'status'  => false,
             'message' => 'Product not found.'
-        ]);
+        ], 404);
     }
 
     /**
